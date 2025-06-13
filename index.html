@@ -56,11 +56,41 @@
         .commands h3 {
             margin-top: 0;
         }
-        .commands pre {
-            background-color: #f8f8f8;
+        .command-item {
+            margin: 10px 0;
             padding: 10px;
+            border: 1px solid #ddd;
             border-radius: 5px;
-            overflow-x: auto;
+            background-color: #f8f8f8;
+            animation: fadeIn 0.5s ease-in;
+        }
+        .command-item h4 {
+            margin: 0 0 5px;
+            color: #333;
+        }
+        .command-text {
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+            word-break: break-all;
+        }
+        .copy-button {
+            margin-top: 5px;
+            padding: 5px 10px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .copy-button:hover {
+            background-color: #45a049;
+        }
+        .copy-feedback {
+            display: none;
+            margin-left: 10px;
+            color: #4caf50;
+            font-size: 14px;
         }
         .timer {
             margin-top: 20px;
@@ -79,6 +109,10 @@
             0% { background-color: white; }
             50% { background-color: #ffff99; }
             100% { background-color: white; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 </head>
@@ -116,7 +150,7 @@
     </ul>
     <div class="commands" id="commands">
         <h3>Commands to Check Functionality</h3>
-        <pre id="commandOutput"></pre>
+        <div id="commandList"></div>
     </div>
     <div class="timer" id="timer">
         <h3>Time Remaining Until July 21, 2025</h3>
@@ -126,13 +160,13 @@
     <script>
         const progressBar = document.getElementById('progressBar');
         const taskList = document.getElementById('taskList');
-        const commandOutput = document.getElementById('commandOutput');
+        const commandList = document.getElementById('commandList');
         const countdown = document.getElementById('countdown');
         let progress = 0;
 
         const testCommands = {
             "Log in to JUMP77": "mstsc /v:10.50.17.31:33377",
-            "Create teammate users": "net user Ahmed_Ali Admin01 /add; net localgroup Administrators Ahmed_Ali /add; net user Aaryan_Badsar Admin01 /add; net localgroup Administrators Aaryan_Badsar /add; net user Karan_Thacker Admin01 /add; net localgroup Administrators Karan_Thacker /add",
+            "Create teammate users": "net user Ahmed_Ali Admin01 /add; net localgroup Administrators /add; net user Aaryan_Badsar Admin01 /add; net localgroup Administrators Aaryan_Badsar /add; net user Karan_Thacker Admin01 /add; net localgroup Administrators Karan_Thacker /add",
             "Change user passwords": "net user Ahmed_Ali NewPass123!; net user Aaryan_Badsar NewPass123!; net user Karan_Thacker NewPass123!",
             "Log in to vSphere": "start http://172.16.10.199",
             "Create Virtual Router": "ping 172.20.77.24",
@@ -143,14 +177,14 @@
             "Deploy DHCP Secondary on SRV04": "ipconfig /release && ipconfig /renew; sudo dhclient -r && sudo dhclient",
             "Deploy HTTP Web on SRV05": "curl http://172.20.77.14",
             "Deploy HTTP Management on SRV06": "ping 172.20.77.15",
-            "Deploy SMB File Server on SRV07": "sudo mount -t cifs //172.20.77.16/share /mnt -o username=Instructor,password=Super3asy.BarelyAn1nconvenience!",
+            "Deploy SMB File Server on SRV07": "sudo mount -t cifs //t 172.20.77.16/share /mnt/o username=Instructor password=Super3asy.BarelyAn1nconvenience!",
             "Deploy NFS File Server on SRV08": "sudo mount -t nfs 172.20.77.17:/share /mnt",
             "Deploy iSCSI Target on SRV09": "iscsicpl.exe; sudo iscsiadm -m discovery -t st -p 172.20.77.18",
             "Deploy iSCSI Initiator on SRV10": "ping 172.20.77.19",
             "Deploy Veeam on SRV11": "ping 172.20.77.20",
             "Deploy WAC on SRV12": "start https://172.20.77.21",
             "Deploy DNS Recursive on SRV13": "nslookup 172.20.77.22 xxx.com; dig @172.20.77.22 xxxx.com",
-            "Deploy Jump Server on SRV14": "mstsc /v:172.20.77.23",
+            "Deploy Jump Server on SRV14": "ping 172.20.77.23",
             "Deploy Value-Added on SRV16": "ping 172.20.77.25",
             "Deploy Value-Added on SRV17": "ping 172.20.77.26",
             "Deploy Value-Added on SRV18": "ping 172.20.77.27",
@@ -182,13 +216,36 @@
         }
 
         function addCommand(taskName) {
-            const command = testCommands[taskName] ? `${testCommands[taskName]}\n` : '';
-            commandOutput.textContent += command;
+            const command = testCommands[taskName] || '';
+            if (command) {
+                const commandItem = document.createElement('div');
+                commandItem.className = 'command-item';
+                commandItem.id = `command_${taskName.replace(/\s/g, '_')}`;
+                commandItem.innerHTML = `
+                    <h4>${taskName}</h4>
+                    <p class="command-text">${command}</p>
+                    <button class="copy-button" onclick="copyCommand('${command}', this)">Copy to Clipboard</button>
+                    <span class="copy-feedback" id="feedback_${taskName.replace(/\s/g, '_')}">Copied!</span>
+                `;
+                commandList.appendChild(commandItem);
+            }
         }
 
         function removeCommand(taskName) {
-            const command = testCommands[taskName] ? `${testCommands[taskName]}\n` : '';
-            commandOutput.textContent = commandOutput.textContent.replace(command, '');
+            const commandItem = document.getElementById(`command_${taskName.replace(/\s/g, '_')}`);
+            if (commandItem) {
+                commandItem.remove();
+            }
+        }
+
+        function copyCommand(command, button) {
+            navigator.clipboard.writeText(command).then(() => {
+                const feedback = button.nextElementSibling;
+                feedback.style.display = 'inline';
+                setTimeout(() => {
+                    feedback.style.display = 'none';
+                }, 1000);
+            });
         }
 
         function highlightNextTask() {
